@@ -2,14 +2,8 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const ejs = require('ejs');
-
-const {Sequelize} = require('sequelize');
-
-// Connect database
-const db = new Sequelize('playlists', 'postgres', '123456', {
-    host: 'localhost',
-    dialect:  'postgres'
-  });
+const db = require('./database/config');
+const Playlist = require('./models/Playlists');
 
 const app = express();
 
@@ -18,30 +12,32 @@ db.authenticate()
   .then(() => console.log('Database connected successfully...'))
   .catch(err => console.log('Error: '+err))
 
-const Playlist = db.define('playlist', {
-  id:{
-    field: 'PlaylistId',
-    type: Sequelize.INTEGER,
-    primaryKey: true
-  },
-  name:{
-    field: 'Name',
-    type: Sequelize.STRING
-  }
-},
-{
-  timestamps: false
-});
 
-
+// Main route
 app.get('/', (req,res) => {
     res.send('Hello!')
 })
 
+// Get all Playlists using API endpoints
 app.get('/api/playlists/', (req,res) => {
-    Playlist.findAll()
-            .then(playlists => res.json(playlists))
-            .catch(err => console.log('Error: '+err))
+  Playlist.findAll()
+          .then((playlists) => { res.json(playlists) })
+          .catch(err => console.log('Error: '+err))
+})
+
+// Get single Playlist using API endpoints
+app.get('/api/playlists/:id', (req,res) => {
+  let id = req.params.id;
+  Playlist.findByPk(id)
+          .then((playlist) => { 
+            if(playlist){
+              res.json(playlist)
+            }
+            else{
+              res.status(404).send();
+            } 
+          })
+          .catch(err => console.log('Error: '+err))
 })
 
 const PORT = process.env.PORT || 5000;
